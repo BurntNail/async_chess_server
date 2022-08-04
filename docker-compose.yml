@@ -5,7 +5,7 @@ services:
     container_name: async_chess_db
     environment:
       - POSTGRES_DB=async_chess
-      - POSTGRES_PASSWORD=localdb
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     expose:
       - "8080"
       - "5432"
