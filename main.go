@@ -45,6 +45,8 @@ func main() {
 	router := gin.Default()
 	router.GET("/games/:id", APIGetPieces)
 	router.GET("/newgame/:id", APINewGame)
+	router.GET("/deletegame/:id", APIDeleteGame)
+	router.GET("/deleteall", APIDeleteTable)
 
 	router.Run("109.74.205.63:12345")
 }

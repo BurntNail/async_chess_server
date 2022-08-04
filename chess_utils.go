@@ -2,11 +2,12 @@ package main
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 )
 
 const (
-	PAWN = 1 << iota
+	PAWN = iota
 	BISHOP
 	KNIGHT
 	ROOK
@@ -33,25 +34,23 @@ func NameToIndex(name string) (int, error) {
 	}
 }
 
-func IndexToNames(index int) []string {
-	names := make([]string, 0, 6)
-
-	switch {
-	case index&PAWN == PAWN:
-		names = append(names, "Pawn")
-	case index&BISHOP == BISHOP:
-		names = append(names, "Bishop")
-	case index&KNIGHT == KNIGHT:
-		names = append(names, "Knight")
-	case index&ROOK == ROOK:
-		names = append(names, "Rook")
-	case index&QUEEN == QUEEN:
-		names = append(names, "Queen")
-	case index&KING == KING:
-		names = append(names, "King")
+func IndexToName(index int) (string, error) {
+	switch index {
+	case PAWN:
+		return "Pawn", nil
+	case BISHOP:
+		return "Bishop", nil
+	case KNIGHT:
+		return "Knight", nil
+	case ROOK:
+		return "Rook", nil
+	case QUEEN:
+		return "Queen", nil
+	case KING:
+		return "King", nil
+	default:
+		return "", errors.New("invalid index: " + strconv.Itoa(index))
 	}
-
-	return names
 }
 
 //YPOS needs to be from 0 to 7 inclusive
@@ -72,11 +71,60 @@ func StartYPosToIndex(ypos int) int {
 	}
 }
 
+func DefaultBoard() (Board, error) {
+	board := make([]Piece, 0, 8*4)
+
+	{
+		pawnName, err := IndexToName(PAWN)
+		if err != nil {
+			return nil, err
+		}
+
+		for y := 0; y < 8; y++ {
+			board = append(board, Piece{
+				X:       0,
+				Y:       y,
+				Kind:    pawnName,
+				IsWhite: false,
+			})
+			board = append(board, Piece{
+				X:       7,
+				Y:       y,
+				Kind:    pawnName,
+				IsWhite: true,
+			})
+		}
+	}
+
+	for y := 0; y < 8; y++ {
+		kind, err := IndexToName(StartYPosToIndex(y))
+		if err != nil {
+			return nil, err
+		}
+
+		board = append(board, Piece{
+			X:       1,
+			Y:       y,
+			Kind:    kind,
+			IsWhite: false,
+		})
+		board = append(board, Piece{
+			X:       6,
+			Y:       y,
+			Kind:    kind,
+			IsWhite: true,
+		})
+
+	}
+
+	return board, nil
+}
+
 type Piece struct {
-	X       int `json:"x"`
-	Y       int `json:"y"`
-	Kind    int `json:"kind"`
-	IsWhite bool `json:"is_white"`
+	X       int    `json:"x"`
+	Y       int    `json:"y"`
+	Kind    string `json:"kind"`
+	IsWhite bool   `json:"is_white"`
 }
 
 type Board []Piece

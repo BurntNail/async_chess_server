@@ -23,10 +23,15 @@ func GetBoard(id int, db *sql.DB, startNewIfNotExists bool) (Board, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var x, y, kind int
+		var x, y int
+		var kind_i int
 		var is_white bool
 
-		if err := rows.Scan(&x, &y, &kind, &is_white); err != nil {
+		if err := rows.Scan(&x, &y, &kind_i, &is_white); err != nil {
+			return nil, err
+		}
+		kind, err := IndexToName(kind_i)
+		if err != nil {
 			return nil, err
 		}
 
@@ -64,21 +69,36 @@ func NewGame(id int, db *sql.DB) error {
 	}
 
 	insertStmt := `INSERT INTO "Pieces"("x", "y", "kind", "is_white", "parent_id") VALUES ($1, $2, $3, $4, $5)`
-	for x := 0; x < 2; x++ {
-		for y := 0; y < 8; y++ {
-			if _, e := db.Exec(insertStmt, x, y, StartYPosToIndex(y), false, id); e != nil {
-				return e
-			}
-		}
+	board, err := DefaultBoard()
+	if err != nil {
+		return err
 	}
-
-	for x := 6; x < 8; x++ {
-		for y := 0; y < 8; y++ {
-			if _, e := db.Exec(insertStmt, x, y, StartYPosToIndex(y), true, id); e != nil {
-				return e
-			}
+	for _, piece := range board {
+		index, err := NameToIndex(piece.Kind)
+		if err != nil {
+			return err //wtf
+		}
+		if _, e := db.Exec(insertStmt, piece.X, piece.Y, index, piece.IsWhite, id); e != nil {
+			return e
 		}
 	}
 
 	return nil
+}
+
+func rows_and_error(db *sql.DB, query string) (int, error) {
+	res, err := db.Exec(query)
+	if err != nil {
+		return -1, err
+	}
+	rows, err := res.RowsAffected()
+	return int(rows), err
+}
+
+func DeleteGame(db *sql.DB, id int) (int, error) {
+	return rows_and_error(db, fmt.Sprint(`DELETE FROM "Pieces" WHERE parent_id = `, id))
+}
+
+func DeleteTable(db *sql.DB) (int, error) {
+	return rows_and_error(db, `DROP TABLE "Pieces"`)
 }

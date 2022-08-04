@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -20,16 +19,11 @@ func APIGetPieces(c *gin.Context) {
 
 	pieces, err := GetBoard(id, GlobalDb, false)
 	if err != nil {
-		c.JSON(http.StatusServiceUnavailable, gin.H{"message": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
-	jsoned, err := json.Marshal(pieces)
-	if err != nil {
-		panic(err) //not server error, so panic!
-	}
-
-	c.JSON(http.StatusOK, jsoned) //make way to json these
+	c.JSON(http.StatusOK, pieces) //make way to json these
 }
 
 func APINewGame(c *gin.Context) {
@@ -43,8 +37,36 @@ func APINewGame(c *gin.Context) {
 	}
 
 	if err := NewGame(id, GlobalDb); err != nil {
-		c.JSON(http.StatusServiceUnavailable, gin.H{"message": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"message": "board successfully createed"})
+	}
+}
+
+func APIDeleteTable(c *gin.Context) {
+	DbMutex.Lock()
+	defer DbMutex.Unlock()
+
+	if num, err := DeleteTable(GlobalDb); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"Rows Affected": num})
+	}
+}
+
+func APIDeleteGame(c *gin.Context) {
+	DbMutex.Lock()
+	defer DbMutex.Unlock()
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if num, err := DeleteGame(GlobalDb, id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"Rows Affected": num})
 	}
 }
