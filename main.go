@@ -3,5 +3,6 @@ package main
 import "fmt"
 
 func main() {
-	fmt.Println("Hello Chess!")
+	value := 42
+	fmt.Println("Hello %v", value)
 }
