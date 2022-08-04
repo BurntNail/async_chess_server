@@ -73,10 +73,10 @@ func StartYPosToIndex(ypos int) int {
 }
 
 type Piece struct {
-	X       int
-	Y       int
-	Kind    int
-	IsWhite bool
+	X       int `json:"x"`
+	Y       int `json:"y"`
+	Kind    int `json:"kind"`
+	IsWhite bool `json:"is_white"`
 }
 
 type Board []Piece

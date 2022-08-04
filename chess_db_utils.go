@@ -30,7 +30,7 @@ func GetBoard(id int, db *sql.DB, startNewIfNotExists bool) (Board, error) {
 			return nil, err
 		}
 
-		fmt.Println("Found ", x, ", ", y, ", ", IndexToNames(kind), ", ", is_white)
+		// fmt.Println("Found ", x, ", ", y, ", ", IndexToNames(kind), ", ", is_white)
 		pieces = append(pieces, Piece{
 			X:       x,
 			Y:       y,
@@ -39,7 +39,7 @@ func GetBoard(id int, db *sql.DB, startNewIfNotExists bool) (Board, error) {
 		})
 	}
 
-	if len(pieces) == 8*4 {
+	if len(pieces) != 8*4 {
 		if startNewIfNotExists {
 			fmt.Println("Unable to find enough pieces, new game time!")
 
