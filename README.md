@@ -18,3 +18,11 @@ The server exposes a REST API using the gin go library with the following endpoi
  - `/newgame` - pass in an integer id to create a new game, and this will overwrite the old game
  - `/deletegame` - pass in an integer id to delete a game
  - `/movepiece` - pass in a json struct of all integers: `id, x, y, nx, ny` where all are > 0, and `x,y,nx,ny` are < 8. All fields must be set for validation purposes, as much as Go loves the default values.
+
+## TODO:
+ - validation to ensure the same users are playing the same games, maybe via cookies/passwords
+ - TUI for running the game, whilst somehow preserving the `gin` logs
+ - validation for movements of chess pieces, eg. knights jump, pawns take diagonally
+ - validation for moves made in correct order
+ - validation for when the game is done
+ - support for weird rules like castling and promotion
