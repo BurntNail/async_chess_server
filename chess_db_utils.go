@@ -20,8 +20,8 @@ func GetBoard(id int, db *sql.DB, startNewIfNotExists bool) (Board, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
+	defer rows.Close()
 	for rows.Next() {
 		var x, y int
 		var kind_i int
@@ -35,7 +35,6 @@ func GetBoard(id int, db *sql.DB, startNewIfNotExists bool) (Board, error) {
 			return nil, err
 		}
 
-		// fmt.Println("Found ", x, ", ", y, ", ", IndexToNames(kind), ", ", is_white)
 		pieces = append(pieces, Piece{
 			X:       x,
 			Y:       y,
@@ -86,19 +85,65 @@ func NewGame(id int, db *sql.DB) error {
 	return nil
 }
 
+//bool signifies whether or not piece was taken
+func MovePiece(db *sql.DB, id, x, y, newX, newY int) (bool, error) {
+	pieceTaken := false
+
+	//check whether or not there is a piece to move
+	if rows, err := db.Query(`SELECT * FROM "Pieces" WHERE "x"=$1 AND "y"=$2 AND "parent_id"=$3`, x, y, id); err != nil {
+		// if rows, err := db.Query(`SELECT * FROM "Pieces"`); err != nil {
+		return false, err
+	} else {
+		count := 0
+		defer rows.Close()
+		for rows.Next() {
+			count++
+		}
+		if count == 0 {
+			return false, errors.New("unable to find piece in given position")
+		}
+	}
+
+	if res, err := db.Exec(`UPDATE "Pieces" SET "x"=-1, "y"=-1 WHERE "x"=$1 AND "y"=$2 AND "parent_id"=$3`, newX, newY, id); err != nil {
+		return pieceTaken, err
+	} else {
+		if rows, err := res.RowsAffected(); err != nil {
+			return false, err
+		} else {
+			if rows > 0 {
+				pieceTaken = true
+			}
+		}
+	}
+	if res, err := db.Exec(`UPDATE "Pieces" SET "x"=$3, "y"=$4 WHERE "x"=$1 AND "y"=$2 AND "parent_id"=$5`, x, y, newX, newY, id); err != nil {
+		return pieceTaken, err
+	} else {
+		if rows, err := res.RowsAffected(); err != nil {
+			return pieceTaken, err
+		} else {
+			fmt.Println("Affected", rows, "rows")
+			return pieceTaken, nil
+		}
+	}
+
+}
+
+func DeleteGame(db *sql.DB, id int) (int, error) {
+	return rows_and_error(db, fmt.Sprint(`DELETE FROM "Pieces" WHERE parent_id=`, id))
+}
+
+// func DeleteTable(db *sql.DB) (int, error) {
+// 	return rows_and_error(db, `DROP TABLE "Pieces"`)
+// }
+
 func rows_and_error(db *sql.DB, query string) (int, error) {
 	res, err := db.Exec(query)
 	if err != nil {
 		return -1, err
 	}
 	rows, err := res.RowsAffected()
-	return int(rows), err
-}
-
-func DeleteGame(db *sql.DB, id int) (int, error) {
-	return rows_and_error(db, fmt.Sprint(`DELETE FROM "Pieces" WHERE parent_id = `, id))
-}
-
-func DeleteTable(db *sql.DB) (int, error) {
-	return rows_and_error(db, `DROP TABLE "Pieces"`)
+	if err != nil {
+		return -1, err
+	}
+	return int(rows), nil
 }

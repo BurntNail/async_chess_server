@@ -24,6 +24,10 @@ var DbMutex sync.Mutex
 func main() {
 	loadEnv()
 	loadDB()
+	defer func() {
+		fmt.Println("Exiting app")
+		GlobalDb.Close()
+	}()
 	startServer()
 }
 
@@ -60,10 +64,12 @@ func startServer() {
 	router := gin.Default()
 
 	router.GET("/games/:id", APIGetPieces)
-	router.GET("/newgame/:id", APINewGame)
-	router.GET("/deletegame/:id", APIDeleteGame)
-	router.GET("/deleteall", APIDeleteTable)
+	router.POST("/newgame", APINewGame)
+	router.POST("/deletegame", APIDeleteGame)
+	router.POST("/movepiece", APIMovePiece)
+	// router.GET("/deleteall", APIDeleteTable) //might re-expose later but not for now
 
-	router.Run("109.74.205.63:12345")
-
+	if err := router.Run("109.74.205.63:12345"); err != nil {
+		fmt.Println("Error with Running server:", err.Error())
+	}
 }
