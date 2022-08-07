@@ -17,4 +17,4 @@ The server exposes a REST API using the gin go library with the following endpoi
 
  - `/newgame` - pass in an integer id to create a new game, and this will overwrite the old game
  - `/deletegame` - pass in an integer id to delete a game
- - `/movepiece`
+ - `/movepiece` - pass in a json struct of all integers: `id, x, y, nx, ny` where all are > 0, and `x,y,nx,ny` are < 8. All fields must be set for validation purposes, as much as Go loves the default values.
