@@ -20,6 +20,8 @@ The server exposes a REST API using the gin go library with the following endpoi
  - `/movepiece` - pass in a json struct of all integers: `id, x, y, nx, ny` where all are > 0, and `x,y,nx,ny` are < 8. All fields must be set for validation purposes, as much as Go loves the default values.
 
 ## TODO:
+ - GUI desktop client
+ - Web client
  - validation to ensure the same users are playing the same games, maybe via cookies/passwords
  - TUI for running the game, whilst somehow preserving the `gin` logs
  - validation for movements of chess pieces, eg. knights jump, pawns take diagonally
