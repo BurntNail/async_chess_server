@@ -85,7 +85,7 @@ func NewGame(id int, db *sql.DB) error {
 	return nil
 }
 
-//bool signifies whether or not piece was taken
+// bool signifies whether or not piece was taken
 func MovePiece(db *sql.DB, id, x, y, newX, newY int) (bool, error) {
 	pieceTaken := false
 

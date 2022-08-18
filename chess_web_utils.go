@@ -8,8 +8,8 @@ import (
 )
 
 func APIGetPieces(c *gin.Context) {
-	DbMutex.Lock()
-	defer DbMutex.Unlock()
+	GlobalDbMutex.Lock()
+	defer GlobalDbMutex.Unlock()
 
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -17,18 +17,29 @@ func APIGetPieces(c *gin.Context) {
 		return
 	}
 
-	pieces, err := GetBoard(id, GlobalDb, false)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if valid_ids, ok := GlobalDbValidCaches[c.ClientIP()]; !ok || valid_ids.IndexOf(id) == -1 {
+		//Refresh cache as client ip not present, or id not present
+
+		pieces, err := GetBoard(id, GlobalDb, false)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusOK, pieces)
+		}
+
+		valid_ids.Add(id)
+		GlobalDbValidCaches[c.ClientIP()] = valid_ids
+
 		return
 	}
 
-	c.JSON(http.StatusOK, pieces) //make way to json these
+	//The client already has a valid cache
+	c.JSON(http.StatusAlreadyReported, "")
 }
 
 func APINewGame(c *gin.Context) {
-	DbMutex.Lock()
-	defer DbMutex.Unlock()
+	GlobalDbMutex.Lock()
+	defer GlobalDbMutex.Unlock()
 
 	var id int
 	if err := c.BindJSON(&id); err != nil {
@@ -40,6 +51,10 @@ func APINewGame(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"message": "board successfully created"})
+
+		current := GlobalDbValidCaches[c.ClientIP()]
+		current.Remove(id)
+		GlobalDbValidCaches[c.ClientIP()] = current
 	}
 }
 
@@ -55,8 +70,8 @@ func APINewGame(c *gin.Context) {
 // }
 
 func APIDeleteGame(c *gin.Context) {
-	DbMutex.Lock()
-	defer DbMutex.Unlock()
+	GlobalDbMutex.Lock()
+	defer GlobalDbMutex.Unlock()
 
 	var id int
 	if err := c.BindJSON(&id); err != nil {
@@ -68,6 +83,10 @@ func APIDeleteGame(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"Rows Affected": num})
+
+		current := GlobalDbValidCaches[c.ClientIP()]
+		current.Remove(id)
+		GlobalDbValidCaches[c.ClientIP()] = current
 	}
 }
 
@@ -82,8 +101,8 @@ type PieceMove struct {
 const defaultPMField = -42069
 
 func APIMovePiece(c *gin.Context) {
-	DbMutex.Lock()
-	defer DbMutex.Unlock()
+	GlobalDbMutex.Lock()
+	defer GlobalDbMutex.Unlock()
 
 	var move PieceMove = PieceMove{ID: defaultPMField, X: defaultPMField, Y: defaultPMField, NewX: defaultPMField, NewY: defaultPMField}
 	if err := c.BindJSON(&move); err != nil {
@@ -141,7 +160,7 @@ func APIMovePiece(c *gin.Context) {
 		}
 
 		if len(errors) != 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error validating fields": errors, "recv": move})
+			c.JSON(http.StatusBadRequest, gin.H{"error validating fields": errors, "user input parsed": move})
 			return
 		}
 	}
@@ -160,5 +179,9 @@ func APIMovePiece(c *gin.Context) {
 		} else {
 			c.JSON(http.StatusOK, "Piece was not taken")
 		}
+
+		current := GlobalDbValidCaches[c.ClientIP()]
+		current.Remove(move.ID)
+		GlobalDbValidCaches[c.ClientIP()] = current
 	}
 }

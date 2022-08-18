@@ -11,7 +11,7 @@ The server exposes a REST API using the gin go library with the following endpoi
 
 ### GET:
 
- - `/games/:id` - pass in an integer id to get all of the pieces involved in that game. Will 500 if no pieces.
+ - `/games/:id` - pass in an integer id to get all of the pieces involved in that game. Will 500 if no pieces. Will return 200 with pieces, or a 208 if the pieces haven't changed.
 
  ### POST:
 

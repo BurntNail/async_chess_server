@@ -53,7 +53,7 @@ func IndexToName(index int) (string, error) {
 	}
 }
 
-//YPOS needs to be from 0 to 7 inclusive
+// YPOS needs to be from 0 to 7 inclusive
 func StartYPosToIndex(ypos int) int {
 	switch ypos {
 	case 0, 7:
@@ -80,37 +80,37 @@ func DefaultBoard() (Board, error) {
 			return nil, err
 		}
 
-		for y := 0; y < 8; y++ {
+		for x := 0; x < 8; x++ {
 			board = append(board, Piece{
-				X:       0,
-				Y:       y,
+				Y:       1,
+				X:       x,
 				Kind:    pawnName,
 				IsWhite: false,
 			})
 			board = append(board, Piece{
-				X:       7,
-				Y:       y,
+				Y:       6,
+				X:       x,
 				Kind:    pawnName,
 				IsWhite: true,
 			})
 		}
 	}
 
-	for y := 0; y < 8; y++ {
-		kind, err := IndexToName(StartYPosToIndex(y))
+	for x := 0; x < 8; x++ {
+		kind, err := IndexToName(StartYPosToIndex(x))
 		if err != nil {
 			return nil, err
 		}
 
 		board = append(board, Piece{
-			X:       1,
-			Y:       y,
+			Y:       0,
+			X:       x,
 			Kind:    kind,
 			IsWhite: false,
 		})
 		board = append(board, Piece{
-			X:       6,
-			Y:       y,
+			Y:       7,
+			X:       x,
 			Kind:    kind,
 			IsWhite: true,
 		})

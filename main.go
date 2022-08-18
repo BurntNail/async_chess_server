@@ -19,7 +19,8 @@ const (
 )
 
 var GlobalDb *sql.DB
-var DbMutex sync.Mutex
+var GlobalDbValidCaches map[string]JVec[int] = make(map[string]JVec[int])
+var GlobalDbMutex sync.Mutex
 
 func main() {
 	loadEnv()
@@ -37,7 +38,7 @@ func loadEnv() {
 	}
 }
 func loadDB() {
-	DbMutex.Lock()
+	GlobalDbMutex.Lock()
 
 	psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, os.Getenv("DB_PASSWORD"), dbname)
 
@@ -56,7 +57,7 @@ func loadDB() {
 	fmt.Println("Connected to DB!")
 
 	GlobalDb = db
-	DbMutex.Unlock()
+	GlobalDbMutex.Unlock()
 }
 func startServer() {
 	gin.SetMode(gin.ReleaseMode)
