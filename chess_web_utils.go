@@ -52,9 +52,7 @@ func APINewGame(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusOK, gin.H{"message": "board successfully created"})
 
-		current := GlobalDbValidCaches[c.ClientIP()]
-		current.Remove(id)
-		GlobalDbValidCaches[c.ClientIP()] = current
+		removeID(id)
 	}
 }
 
@@ -84,9 +82,7 @@ func APIDeleteGame(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusOK, gin.H{"Rows Affected": num})
 
-		current := GlobalDbValidCaches[c.ClientIP()]
-		current.Remove(id)
-		GlobalDbValidCaches[c.ClientIP()] = current
+		removeID(id)
 	}
 }
 
@@ -180,9 +176,7 @@ func APIMovePiece(c *gin.Context) {
 			c.JSON(http.StatusOK, "Piece was not taken")
 		}
 
-		current := GlobalDbValidCaches[c.ClientIP()]
-		current.Remove(move.ID)
-		GlobalDbValidCaches[c.ClientIP()] = current
+		removeID(move.ID)
 	}
 }
 
@@ -190,4 +184,12 @@ func APIInvalidateClientIPCache(c *gin.Context) {
 	GlobalDbMutex.Lock()
 	delete(GlobalDbValidCaches, c.ClientIP())
 	GlobalDbMutex.Unlock()
+}
+
+// Needs to have the mutex locked
+func removeID(id int) {
+	for k, list := range GlobalDbValidCaches {
+		list.Remove(id)
+		GlobalDbValidCaches[k] = list
+	}
 }

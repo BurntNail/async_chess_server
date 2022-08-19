@@ -19,8 +19,9 @@ const (
 )
 
 var GlobalDb *sql.DB
-var GlobalDbValidCaches map[string]JVec[int] = make(map[string]JVec[int]) //TODO: Give the caches their own mutex
 var GlobalDbMutex sync.Mutex
+
+var GlobalDbValidCaches map[string]JVec[int] = make(map[string]JVec[int]) //TODO: Give the caches their own mutex
 
 func main() {
 	loadEnv()
