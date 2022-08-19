@@ -21,7 +21,8 @@ const (
 var GlobalDb *sql.DB
 var GlobalDbMutex sync.Mutex
 
-var GlobalDbValidCaches map[string]JVec[int] = make(map[string]JVec[int]) //TODO: Give the caches their own mutex
+var ClientGetValidCaches map[string]JVec[int] = make(map[string]JVec[int])
+var ClientGetCacheMutex sync.RWMutex
 
 func main() {
 	loadEnv()

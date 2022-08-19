@@ -17,8 +17,12 @@ func APIGetPieces(c *gin.Context) {
 		return
 	}
 
-	if valid_ids, ok := GlobalDbValidCaches[c.ClientIP()]; !ok || valid_ids.IndexOf(id) == -1 {
+	ClientGetCacheMutex.RLock()
+
+	if valid_ids, ok := ClientGetValidCaches[c.ClientIP()]; !ok || valid_ids.IndexOf(id) == -1 {
 		//Refresh cache as client ip not present, or id not present
+
+		ClientGetCacheMutex.RUnlock()
 
 		pieces, err := GetBoard(id, GlobalDb, false)
 		if err != nil {
@@ -27,10 +31,14 @@ func APIGetPieces(c *gin.Context) {
 			c.JSON(http.StatusOK, pieces)
 		}
 
+		ClientGetCacheMutex.Lock()
 		valid_ids.Add(id)
-		GlobalDbValidCaches[c.ClientIP()] = valid_ids
+		ClientGetValidCaches[c.ClientIP()] = valid_ids
+		ClientGetCacheMutex.Unlock()
 
 		return
+	} else {
+		ClientGetCacheMutex.RUnlock()
 	}
 
 	//The client already has a valid cache
@@ -181,15 +189,17 @@ func APIMovePiece(c *gin.Context) {
 }
 
 func APIInvalidateClientIPCache(c *gin.Context) {
-	GlobalDbMutex.Lock()
-	delete(GlobalDbValidCaches, c.ClientIP())
-	GlobalDbMutex.Unlock()
+	ClientGetCacheMutex.Lock()
+	delete(ClientGetValidCaches, c.ClientIP())
+	ClientGetCacheMutex.Unlock()
 }
 
 // Needs to have the mutex locked
 func removeID(id int) {
-	for k, list := range GlobalDbValidCaches {
+	ClientGetCacheMutex.Lock()
+	for k, list := range ClientGetValidCaches {
 		list.Remove(id)
-		GlobalDbValidCaches[k] = list
+		ClientGetValidCaches[k] = list
 	}
+	ClientGetCacheMutex.Unlock()
 }
