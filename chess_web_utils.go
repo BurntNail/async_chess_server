@@ -98,7 +98,7 @@ type PieceMove struct {
 	NewY int `json:"ny"`
 }
 
-const defaultPMField = -42069
+const defaultPMField = -4206951235
 
 func APIMovePiece(c *gin.Context) {
 	GlobalDbMutex.Lock()
@@ -184,4 +184,10 @@ func APIMovePiece(c *gin.Context) {
 		current.Remove(move.ID)
 		GlobalDbValidCaches[c.ClientIP()] = current
 	}
+}
+
+func APIInvalidateClientIPCache(c *gin.Context) {
+	GlobalDbMutex.Lock()
+	delete(GlobalDbValidCaches, c.ClientIP())
+	GlobalDbMutex.Unlock()
 }

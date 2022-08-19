@@ -19,7 +19,7 @@ const (
 )
 
 var GlobalDb *sql.DB
-var GlobalDbValidCaches map[string]JVec[int] = make(map[string]JVec[int])
+var GlobalDbValidCaches map[string]JVec[int] = make(map[string]JVec[int]) //TODO: Give the caches their own mutex
 var GlobalDbMutex sync.Mutex
 
 func main() {
@@ -68,6 +68,7 @@ func startServer() {
 	router.POST("/newgame", APINewGame)
 	router.POST("/deletegame", APIDeleteGame)
 	router.POST("/movepiece", APIMovePiece)
+	router.POST("/invalidate", APIInvalidateClientIPCache)
 	// router.GET("/deleteall", APIDeleteTable) //might re-expose later but not for now
 
 	if err := router.Run("109.74.205.63:12345"); err != nil {
