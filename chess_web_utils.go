@@ -171,7 +171,7 @@ func APIMovePiece(c *gin.Context) {
 
 	if wasTaken, err := MovePiece(GlobalDb, move.ID, move.X, move.Y, move.NewX, move.NewY); err != nil {
 		var statusCode int
-		if err.Error() == "unable to find piece in given position" {
+		if err.Error() == "unable to find piece in given position" || err.Error() == "invalid move" {
 			statusCode = http.StatusBadRequest
 		} else {
 			statusCode = http.StatusInternalServerError

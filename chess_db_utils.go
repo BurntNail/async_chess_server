@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 )
 
 func CreateTable(db *sql.DB) error {
@@ -85,36 +86,91 @@ func NewGame(id int, db *sql.DB) error {
 	return nil
 }
 
+type SQLPiece struct {
+	x         int
+	y         int
+	kind      int
+	is_white  bool
+	parent_id int
+}
+
+// Can provide a nil function to validate
+func getValidPieces(rows *sql.Rows, validate func(SQLPiece) bool) []SQLPiece {
+	slice := make([]SQLPiece, 0)
+
+	var x, y, kind, parent_id int
+	var is_white bool
+	var sqlp SQLPiece
+	for rows.Next() {
+		rows.Scan(&x, &y, &kind, &is_white, &parent_id)
+		sqlp = SQLPiece{x: x, y: y, kind: kind, is_white: is_white, parent_id: parent_id}
+
+		fmt.Printf("validating %v", sqlp)
+		if validate != nil {
+			if validate(sqlp) {
+				slice = append(slice, sqlp)
+			}
+		} else {
+			slice = append(slice, sqlp)
+		}
+	}
+
+	return slice
+}
+
 // bool signifies whether or not piece was taken
 func MovePiece(db *sql.DB, id, x, y, newX, newY int) (bool, error) {
-	pieceTaken := false
+	var pieceTaken bool
+	var validMove bool
 
 	//check whether or not there is a piece to move
-	if rows, err := db.Query(`SELECT * FROM "Pieces" WHERE "x"=$1 AND "y"=$2 AND "parent_id"=$3`, x, y, id); err != nil {
-		// if rows, err := db.Query(`SELECT * FROM "Pieces"`); err != nil {
+	if currentp_rows, err := db.Query(`SELECT * FROM "Pieces" WHERE "x"=$1 AND "y"=$2 AND "parent_id"=$3`, x, y, id); err != nil {
 		return false, err
 	} else {
-		count := 0
-		defer rows.Close()
-		for rows.Next() {
-			count++
-		}
-		if count == 0 {
+		defer currentp_rows.Close()
+		currentpieces := getValidPieces(currentp_rows, nil)
+		if len(currentpieces) == 0 {
 			return false, errors.New("unable to find piece in given position")
 		}
-	}
+		currentpiece := currentpieces[0]
+		if currentpiece.x == newX && currentpiece.y == newY {
+			return false, errors.New("invalid move")
+		}
 
-	if res, err := db.Exec(`UPDATE "Pieces" SET "x"=-1, "y"=-1 WHERE "x"=$1 AND "y"=$2 AND "parent_id"=$3`, newX, newY, id); err != nil {
-		return pieceTaken, err
-	} else {
-		if rows, err := res.RowsAffected(); err != nil {
+		if takenp_rows, err := db.Query(`SELECT * FROM "Pieces" WHERE "x"=$1 AND "y"=$2 AND "parent_id"=$3`, newX, newY, id); err != nil {
 			return false, err
 		} else {
-			if rows > 0 {
+			defer takenp_rows.Close()
+
+			valid := func(sqlp SQLPiece) bool {
+				return sqlp.is_white != currentpiece.is_white
+			}
+
+			takenpieces := getValidPieces(takenp_rows, valid)
+			if len(takenpieces) == 0 {
+				pieceTaken = false
+			} else {
 				pieceTaken = true
 			}
+
+			fmt.Printf("Checking %v", currentpiece)
+			if currentpiece.kind == PAWN {
+				validMove = CheckValidMovePawn(currentpiece, newX, newY, pieceTaken)
+			} else {
+				validMove = CheckValidMoveNonPawn(currentpiece, newX, newY)
+			}
 		}
+
 	}
+
+	if !validMove {
+		return false, errors.New("invalid move")
+	}
+
+	if _, err := db.Exec(`UPDATE "Pieces" SET "x"=-1, "y"=-1 WHERE "x"=$1 AND "y"=$2 AND "parent_id"=$3`, newX, newY, id); err != nil {
+		return false, err
+	}
+
 	if res, err := db.Exec(`UPDATE "Pieces" SET "x"=$3, "y"=$4 WHERE "x"=$1 AND "y"=$2 AND "parent_id"=$5`, x, y, newX, newY, id); err != nil {
 		return pieceTaken, err
 	} else {
@@ -130,6 +186,64 @@ func MovePiece(db *sql.DB, id, x, y, newX, newY int) (bool, error) {
 
 func DeleteGame(db *sql.DB, id int) (int, error) {
 	return rows_and_error(db, fmt.Sprint(`DELETE FROM "Pieces" WHERE parent_id=`, id))
+}
+
+func CheckValidMoveNonPawn(current SQLPiece, newX, newY int) bool {
+	dx := AbsInt(current.x - newX)
+	dy := AbsInt(current.y - newY)
+
+	bishop := dx == dy
+	rook := (dx != 0 && dy == 0) || (dx == 0 && dy == 1)
+	queen := bishop || rook
+	switch current.kind {
+	case BISHOP:
+		return bishop //TODO: not all pieces can jump
+	case KNIGHT:
+		return (dx == 2 && dy == 1) || (dx == 1 && dy == 2)
+	case ROOK:
+		return rook
+	case QUEEN:
+		return queen
+	case KING:
+		return queen && (PythagDist(dx, dy) < math.Sqrt2)
+	default:
+		return false
+	}
+}
+func CheckValidMovePawn(current SQLPiece, newX, newY int, takesPiece bool) bool {
+	maxYDst := 1
+	if (current.is_white && current.y == 6) || (!current.is_white && current.y == 1) {
+		maxYDst = 2
+	}
+	dstMovedY := current.y - newY
+	if !current.is_white {
+		dstMovedY *= -1
+	}
+
+	if dstMovedY < 1 || dstMovedY > maxYDst {
+		return false
+	}
+
+	if takesPiece {
+		xdst := AbsInt(current.x - newX)
+		return xdst == 1
+	} else {
+		return current.x == newX
+	}
+}
+
+func AbsInt(a int) int {
+	if a < 0 {
+		return -a
+	} else {
+		return a
+	}
+}
+
+func PythagDist(dx, dy int) float64 {
+	x := float64(dx * dx)
+	y := float64(dy * dy)
+	return math.Sqrt(x + y)
 }
 
 // func DeleteTable(db *sql.DB) (int, error) {
