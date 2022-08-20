@@ -2,6 +2,8 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -127,4 +129,79 @@ type Piece struct {
 	IsWhite bool   `json:"is_white"`
 }
 
+type SQLPiece struct {
+	x         int
+	y         int
+	kind      int
+	is_white  bool
+	parent_id int
+}
+
 type Board []Piece
+
+func CheckValidMoveNonPawn(current SQLPiece, newX, newY int) bool {
+	if current.kind == PAWN {
+		fmt.Printf("Pawn passed to CheckValidMoveNotPawn: %v", current)
+
+		return false
+	}
+
+	dx := AbsInt(current.x - newX)
+	dy := AbsInt(current.y - newY)
+
+	bishop := dx == dy
+	rook := (dx != 0 && dy == 0) || (dx == 0 && dy == 1)
+	queen := bishop || rook
+	switch current.kind {
+	case BISHOP:
+		return bishop //TODO: not all pieces can jump
+	case KNIGHT:
+		return (dx == 2 && dy == 1) || (dx == 1 && dy == 2)
+	case ROOK:
+		return rook
+	case QUEEN:
+		return queen
+	case KING:
+		return queen && (PythagDist(dx, dy) < math.Sqrt2)
+	default:
+		return false
+	}
+}
+func CheckValidMovePawn(current SQLPiece, newX, newY int, takesPiece bool) bool {
+	if current.kind != PAWN {
+		if kind, err := IndexToName(current.kind); err != nil {
+			fmt.Printf("Non-Valid type passed to CheckValidMoveNotPawn: %v", current)
+		} else {
+			fmt.Printf("%v passed to CheckValidMoveNotPawn: %v", kind, current)
+		}
+		return false
+	}
+
+	maxYDst := 1
+	if (current.is_white && current.y == 6) || (!current.is_white && current.y == 1) {
+		maxYDst = 2
+	}
+	dstMovedY := current.y - newY
+	if !current.is_white {
+		dstMovedY *= -1
+	}
+
+	if dstMovedY < 1 || dstMovedY > maxYDst {
+		return false
+	}
+
+	if takesPiece {
+		xdst := AbsInt(current.x - newX)
+		return xdst == 1
+	} else {
+		return current.x == newX
+	}
+}
+
+func CheckValidMove(current SQLPiece, nx, ny int, takesPiece bool) bool {
+	if current.kind == PAWN {
+		return CheckValidMovePawn(current, nx, ny, takesPiece)
+	} else {
+		return CheckValidMoveNonPawn(current, nx, ny)
+	}
+}

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"math"
 )
 
 func CreateTable(db *sql.DB) error {
@@ -86,16 +85,8 @@ func NewGame(id int, db *sql.DB) error {
 	return nil
 }
 
-type SQLPiece struct {
-	x         int
-	y         int
-	kind      int
-	is_white  bool
-	parent_id int
-}
-
 // Can provide a nil function to validate
-func getValidPieces(rows *sql.Rows, validate func(SQLPiece) bool) []SQLPiece {
+func getValidPiecesFromRows(rows *sql.Rows, validate func(SQLPiece) bool) []SQLPiece {
 	slice := make([]SQLPiece, 0)
 
 	var x, y, kind, parent_id int
@@ -128,7 +119,7 @@ func MovePiece(db *sql.DB, id, x, y, newX, newY int) (bool, error) {
 		return false, err
 	} else {
 		defer currentp_rows.Close()
-		currentpieces := getValidPieces(currentp_rows, nil)
+		currentpieces := getValidPiecesFromRows(currentp_rows, nil)
 		if len(currentpieces) == 0 {
 			return false, errors.New("unable to find piece in given position")
 		}
@@ -142,25 +133,17 @@ func MovePiece(db *sql.DB, id, x, y, newX, newY int) (bool, error) {
 		} else {
 			defer takenp_rows.Close()
 
-			valid := func(sqlp SQLPiece) bool {
+			takenpieces := getValidPiecesFromRows(takenp_rows, func(sqlp SQLPiece) bool {
 				return sqlp.is_white != currentpiece.is_white
-			}
+			})
+			pieceTaken := len(takenpieces) == 1
 
-			takenpieces := getValidPieces(takenp_rows, valid)
-			if len(takenpieces) == 0 {
-				pieceTaken = false
-			} else {
-				pieceTaken = true
-			}
-
-			fmt.Printf("Checking %v", currentpiece)
 			if currentpiece.kind == PAWN {
 				validMove = CheckValidMovePawn(currentpiece, newX, newY, pieceTaken)
 			} else {
 				validMove = CheckValidMoveNonPawn(currentpiece, newX, newY)
 			}
 		}
-
 	}
 
 	if !validMove {
@@ -181,74 +164,11 @@ func MovePiece(db *sql.DB, id, x, y, newX, newY int) (bool, error) {
 			return pieceTaken, nil
 		}
 	}
-
 }
 
 func DeleteGame(db *sql.DB, id int) (int, error) {
 	return rows_and_error(db, fmt.Sprint(`DELETE FROM "Pieces" WHERE parent_id=`, id))
 }
-
-func CheckValidMoveNonPawn(current SQLPiece, newX, newY int) bool {
-	dx := AbsInt(current.x - newX)
-	dy := AbsInt(current.y - newY)
-
-	bishop := dx == dy
-	rook := (dx != 0 && dy == 0) || (dx == 0 && dy == 1)
-	queen := bishop || rook
-	switch current.kind {
-	case BISHOP:
-		return bishop //TODO: not all pieces can jump
-	case KNIGHT:
-		return (dx == 2 && dy == 1) || (dx == 1 && dy == 2)
-	case ROOK:
-		return rook
-	case QUEEN:
-		return queen
-	case KING:
-		return queen && (PythagDist(dx, dy) < math.Sqrt2)
-	default:
-		return false
-	}
-}
-func CheckValidMovePawn(current SQLPiece, newX, newY int, takesPiece bool) bool {
-	maxYDst := 1
-	if (current.is_white && current.y == 6) || (!current.is_white && current.y == 1) {
-		maxYDst = 2
-	}
-	dstMovedY := current.y - newY
-	if !current.is_white {
-		dstMovedY *= -1
-	}
-
-	if dstMovedY < 1 || dstMovedY > maxYDst {
-		return false
-	}
-
-	if takesPiece {
-		xdst := AbsInt(current.x - newX)
-		return xdst == 1
-	} else {
-		return current.x == newX
-	}
-}
-
-func AbsInt(a int) int {
-	if a < 0 {
-		return -a
-	} else {
-		return a
-	}
-}
-
-func PythagDist(dx, dy int) float64 {
-	x := float64(dx * dx)
-	y := float64(dy * dy)
-	return math.Sqrt(x + y)
-}
-
-// func DeleteTable(db *sql.DB) (int, error) {
-// 	return rows_and_error(db, `DROP TABLE "Pieces"`)
-// }
 
 func rows_and_error(db *sql.DB, query string) (int, error) {
 	res, err := db.Exec(query)

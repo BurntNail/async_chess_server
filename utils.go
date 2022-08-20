@@ -1,5 +1,7 @@
 package main
 
+import "math"
+
 type JVec[T comparable] struct {
 	data []T
 }
@@ -30,4 +32,18 @@ func (jv *JVec[T]) IndexOf(item T) int {
 	}
 
 	return ind
+}
+
+func AbsInt(a int) int {
+	if a < 0 {
+		return -a
+	} else {
+		return a
+	}
+}
+
+func PythagDist(dx, dy int) float64 {
+	x := float64(dx * dx)
+	y := float64(dy * dy)
+	return math.Sqrt(x + y)
 }
