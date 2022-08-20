@@ -17,7 +17,7 @@ The server exposes a REST API using the gin go library with the following endpoi
 
  - `/newgame` - pass in an integer id to create a new game, and this will overwrite the old game
  - `/deletegame` - pass in an integer id to delete a game
- - `/movepiece` - pass in a json struct of all integers: `id, x, y, nx, ny` where all are > 0, and `x,y,nx,ny` are < 8. All fields must be set for validation purposes, as much as Go loves the default values.
+ - `/movepiece` - pass in a json struct of all integers: `id, x, y, nx, ny` where all are > 0, and `x,y,nx,ny` are < 8. All fields must be set for validation purposes, as much as Go loves the default values. Will return a 400 if there is no piece where the request asked, 412 if the move is invalid, a 500 for database errors, or 200 if all succeeded.
  - `/invalidate` - invalidate the cache from the IP
 
 ## TODO:
