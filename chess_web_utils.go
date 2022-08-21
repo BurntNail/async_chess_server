@@ -173,7 +173,7 @@ func APIMovePiece(c *gin.Context) {
 		var statusCode int
 		if err.Error() == "unable to find piece in given position" {
 			statusCode = http.StatusBadRequest
-		} else if err.Error() == "invalid move" {
+		} else if err.Error() == "invalid move" { //TODO: actual error class with error impl
 			statusCode = http.StatusPreconditionFailed
 		} else {
 			statusCode = http.StatusInternalServerError

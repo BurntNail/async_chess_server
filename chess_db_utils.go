@@ -86,14 +86,17 @@ func NewGame(id int, db *sql.DB) error {
 }
 
 // Can provide a nil function to validate
-func getValidPiecesFromRows(rows *sql.Rows, validate func(SQLPiece) bool) []SQLPiece {
+func getValidPiecesFromRows(rows *sql.Rows, validate func(SQLPiece) bool) ([]SQLPiece, error) {
 	slice := make([]SQLPiece, 0)
 
 	var x, y, kind, parent_id int
 	var is_white bool
 	var sqlp SQLPiece
+
 	for rows.Next() {
-		rows.Scan(&x, &y, &kind, &is_white, &parent_id)
+		if err := rows.Scan(&x, &y, &kind, &is_white, &parent_id); err != nil {
+			return nil, err
+		}
 		sqlp = SQLPiece{x: x, y: y, kind: kind, is_white: is_white, parent_id: parent_id}
 
 		fmt.Printf("validating %v", sqlp)
@@ -106,7 +109,7 @@ func getValidPiecesFromRows(rows *sql.Rows, validate func(SQLPiece) bool) []SQLP
 		}
 	}
 
-	return slice
+	return slice, nil
 }
 
 // bool signifies whether or not piece was taken
@@ -119,31 +122,38 @@ func MovePiece(db *sql.DB, id, x, y, newX, newY int) (bool, error) {
 		return false, err
 	} else {
 		defer currentp_rows.Close()
-		currentpieces := getValidPiecesFromRows(currentp_rows, nil)
-		if len(currentpieces) == 0 {
-			return false, errors.New("unable to find piece in given position")
-		}
-		currentpiece := currentpieces[0]
-		if currentpiece.x == newX && currentpiece.y == newY {
-			return false, errors.New("invalid move")
-		}
-
-		if takenp_rows, err := db.Query(`SELECT * FROM "Pieces" WHERE "x"=$1 AND "y"=$2 AND "parent_id"=$3`, newX, newY, id); err != nil {
+		if currentpieces, err := getValidPiecesFromRows(currentp_rows, nil); err != nil {
 			return false, err
 		} else {
-			defer takenp_rows.Close()
+			if len(currentpieces) == 0 {
+				return false, errors.New("unable to find piece in given position")
+			}
+			currentpiece := currentpieces[0]
+			if currentpiece.x == newX && currentpiece.y == newY {
+				return false, errors.New("invalid move")
+			}
 
-			takenpieces := getValidPiecesFromRows(takenp_rows, func(sqlp SQLPiece) bool {
-				return sqlp.is_white != currentpiece.is_white
-			})
-			pieceTaken := len(takenpieces) == 1
-
-			if currentpiece.kind == PAWN {
-				validMove = CheckValidMovePawn(currentpiece, newX, newY, pieceTaken)
+			if takenp_rows, err := db.Query(`SELECT * FROM "Pieces" WHERE "x"=$1 AND "y"=$2 AND "parent_id"=$3`, newX, newY, id); err != nil {
+				return false, err
 			} else {
-				validMove = CheckValidMoveNonPawn(currentpiece, newX, newY)
+				defer takenp_rows.Close()
+
+				v := func(sqlp SQLPiece) bool {
+					return sqlp.is_white != currentpiece.is_white
+				}
+
+				if takenpieces, err := getValidPiecesFromRows(takenp_rows, v); err != nil {
+					return false, err
+				} else {
+					pieceTaken := len(takenpieces) == 1
+
+					if !CheckValidMove(currentpiece, newX, newY, pieceTaken) {
+						return false, errors.New("invalid move")
+					}
+				}
 			}
 		}
+
 	}
 
 	if !validMove {
