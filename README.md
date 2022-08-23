@@ -21,11 +21,7 @@ The server exposes a REST API using the gin go library with the following endpoi
  - `/invalidate` - invalidate the cache from the IP
 
 ## TODO:
- - GUI desktop client
- - Web client
  - validation to ensure the same users are playing the same games, maybe via cookies/passwords
- - TUI for running the game, whilst somehow preserving the `gin` logs
- - validation for movements of chess pieces, eg. knights jump, pawns take diagonally
- - validation for moves made in correct order
+ - validation for movements of chess pieces re jumping
  - validation for when the game is done
  - support for weird rules like castling and promotion

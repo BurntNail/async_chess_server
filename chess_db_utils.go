@@ -115,7 +115,6 @@ func getValidPiecesFromRows(rows *sql.Rows, validate func(SQLPiece) bool) ([]SQL
 // bool signifies whether or not piece was taken
 func MovePiece(db *sql.DB, id, x, y, newX, newY int) (bool, error) {
 	var pieceTaken bool
-	var validMove bool
 
 	//check whether or not there is a piece to move
 	if currentp_rows, err := db.Query(`SELECT * FROM "Pieces" WHERE "x"=$1 AND "y"=$2 AND "parent_id"=$3`, x, y, id); err != nil {
@@ -154,10 +153,6 @@ func MovePiece(db *sql.DB, id, x, y, newX, newY int) (bool, error) {
 			}
 		}
 
-	}
-
-	if !validMove {
-		return false, errors.New("invalid move")
 	}
 
 	if _, err := db.Exec(`UPDATE "Pieces" SET "x"=-1, "y"=-1 WHERE "x"=$1 AND "y"=$2 AND "parent_id"=$3`, newX, newY, id); err != nil {

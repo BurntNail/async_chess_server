@@ -146,15 +146,27 @@ func CheckValidMoveNonPawn(current SQLPiece, newX, newY int) bool {
 		return false
 	}
 
-	dx := AbsInt(current.x - newX)
-	dy := AbsInt(current.y - newY)
+	rx := current.x - newX
+	ry := current.y - newY
+	dx := AbsInt(rx)
+	dy := AbsInt(ry)
+
+	// moveX := 1
+	// moveY := 1
+	// if rx < 0 {
+	// 	moveX = -1
+	// }
+	// if ry < 0 {
+	// 	moveY = -1
+	// }
+	//TODO: not everything can castle
 
 	bishop := dx == dy
 	rook := (dx != 0 && dy == 0) || (dx == 0 && dy == 1)
 	queen := bishop || rook
 	switch current.kind {
 	case BISHOP:
-		return bishop //TODO: not all pieces can jump
+		return bishop
 	case KNIGHT:
 		return (dx == 2 && dy == 1) || (dx == 1 && dy == 2)
 	case ROOK:
@@ -164,8 +176,9 @@ func CheckValidMoveNonPawn(current SQLPiece, newX, newY int) bool {
 	case KING:
 		return queen && (PythagDist(dx, dy) < math.Sqrt2)
 	default:
-		return false
 	}
+
+	return false
 }
 func CheckValidMovePawn(current SQLPiece, newX, newY int, takesPiece bool) bool {
 	if current.kind != PAWN {
@@ -199,9 +212,10 @@ func CheckValidMovePawn(current SQLPiece, newX, newY int, takesPiece bool) bool 
 }
 
 func CheckValidMove(current SQLPiece, nx, ny int, takesPiece bool) bool {
-	if current.kind == PAWN {
-		return CheckValidMovePawn(current, nx, ny, takesPiece)
-	} else {
-		return CheckValidMoveNonPawn(current, nx, ny)
-	}
+	// if current.kind == PAWN {
+	// 	return CheckValidMovePawn(current, nx, ny, takesPiece)
+	// } else {
+	// 	return CheckValidMoveNonPawn(current, nx, ny)
+	// }
+	return true
 }
