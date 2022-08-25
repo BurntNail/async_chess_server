@@ -212,10 +212,9 @@ func CheckValidMovePawn(current SQLPiece, newX, newY int, takesPiece bool) bool 
 }
 
 func CheckValidMove(current SQLPiece, nx, ny int, takesPiece bool) bool {
-	// if current.kind == PAWN {
-	// 	return CheckValidMovePawn(current, nx, ny, takesPiece)
-	// } else {
-	// 	return CheckValidMoveNonPawn(current, nx, ny)
-	// }
-	return true
+	if current.kind == PAWN {
+		return CheckValidMovePawn(current, nx, ny, takesPiece)
+	} else {
+		return CheckValidMoveNonPawn(current, nx, ny)
+	}
 }
