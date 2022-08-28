@@ -6,15 +6,30 @@ services:
     environment:
       - POSTGRES_DB=async_chess
       - POSTGRES_PASSWORD=${DB_PASSWORD}
-    expose:
-      - "8080"
-      - "5432"
     image: postgres:12.2-alpine
     ports:
       - "5432:5432"
       - "8080:8080"
     volumes:
       - data:/var/lib/postgresql/data
+
+  async_chess_server:
+    build: .
+    command: /async_chess_server
+    container_name: async_chess_server_executable
+    depends_on:
+      - postgres
+    expose:
+      - "12345"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:12345/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    links:
+      - "postgres:db"
+    ports:
+      - "12345:12345"
 
 volumes:
   data:

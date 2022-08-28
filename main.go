@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	host   = "localhost"
+	host   = "db"
 	port   = 5432
 	user   = "postgres"
 	dbname = "async_chess"
@@ -75,9 +75,9 @@ func startServer() {
 	router.POST("/deletegame", APIDeleteGame)
 	router.POST("/movepiece", APIMovePiece)
 	router.POST("/invalidate", APIInvalidateClientIPCache)
-	// router.GET("/deleteall", APIDeleteTable) //might re-expose later but not for now
 
-	if err := router.Run("109.74.205.63:12345"); err != nil {
+	//TODO: Make this able to run on any server
+	if err := router.Run(":12345"); err != nil {
 		fmt.Println("Error with Running server:", err.Error())
 	}
 }
