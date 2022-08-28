@@ -144,7 +144,7 @@ func MovePiece(db *sql.DB, id, x, y, newX, newY int) (bool, error) {
 				if takenpieces, err := getValidPiecesFromRows(takenp_rows, v); err != nil {
 					return false, err
 				} else {
-					pieceTaken := len(takenpieces) == 1
+					pieceTaken = len(takenpieces) == 1
 
 					if !CheckValidMove(currentpiece, newX, newY, pieceTaken) {
 						return false, errors.New("invalid move")
