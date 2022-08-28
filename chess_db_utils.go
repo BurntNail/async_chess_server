@@ -159,6 +159,13 @@ func MovePiece(db *sql.DB, id, x, y, newX, newY int) (bool, error) {
 		return false, err
 	}
 
+	if _, err := db.Exec(`UPDATE "Pieces" SET "kind"=$1 WHERE "y"=0 AND "is_white"=true AND "kind"=$2`, QUEEN, PAWN); err != nil {
+		return false, err
+	}
+	if _, err := db.Exec(`UPDATE "Pieces" SET "kind"=$1 WHERE "y"=7 AND "is_white"=false AND "kind"=$2`, QUEEN, PAWN); err != nil {
+		return false, err
+	}
+
 	if res, err := db.Exec(`UPDATE "Pieces" SET "x"=$3, "y"=$4 WHERE "x"=$1 AND "y"=$2 AND "parent_id"=$5`, x, y, newX, newY, id); err != nil {
 		return pieceTaken, err
 	} else {
