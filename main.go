@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
 	"os"
 	"sync"
 
@@ -66,6 +67,9 @@ func startServer() {
 
 	router := gin.Default()
 
+	router.GET("/healthcheck", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"msg": "all OK"})
+	})
 	router.GET("/games/:id", APIGetPieces)
 	router.POST("/newgame", APINewGame)
 	router.POST("/deletegame", APIDeleteGame)
