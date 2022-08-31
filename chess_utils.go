@@ -162,7 +162,7 @@ func CheckValidMoveNonPawn(current SQLPiece, newX, newY int) bool {
 	//TODO: not everything can castle
 
 	bishop := dx == dy
-	rook := (dx != 0 && dy == 0) || (dx == 0 && dy == 1)
+	rook := (dx != 0 && dy == 0) || (dx == 0 && dy != 0)
 	queen := bishop || rook
 	switch current.kind {
 	case BISHOP:
