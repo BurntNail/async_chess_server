@@ -7,6 +7,44 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// func APIGetPieces(c *gin.Context) {
+// 	GlobalDbMutex.Lock()
+// 	defer GlobalDbMutex.Unlock()
+
+// 	id, err := strconv.Atoi(c.Param("id"))
+// 	if err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+// 		return
+// 	}
+
+// 	ClientGetCacheMutex.RLock()
+
+// 	if valid_ids, ok := ClientGetValidCaches[c.ClientIP()]; !ok || valid_ids.IndexOf(id) == -1 {
+// 		//Refresh cache as client ip not present, or id not present
+
+// 		ClientGetCacheMutex.RUnlock()
+
+// 		pieces, err := GetBoard(id, GlobalDb, false)
+// 		if err != nil {
+// 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		} else {
+// 			c.JSON(http.StatusOK, pieces)
+// 		}
+
+// 		ClientGetCacheMutex.Lock()
+// 		valid_ids.Add(id)
+// 		ClientGetValidCaches[c.ClientIP()] = valid_ids
+// 		ClientGetCacheMutex.Unlock()
+
+// 		return
+// 	} else {
+// 		ClientGetCacheMutex.RUnlock()
+// 	}
+
+// 	//The client already has a valid cache
+// 	c.JSON(http.StatusAlreadyReported, "")
+// }
+
 func APIGetPieces(c *gin.Context) {
 	GlobalDbMutex.Lock()
 	defer GlobalDbMutex.Unlock()
@@ -17,32 +55,14 @@ func APIGetPieces(c *gin.Context) {
 		return
 	}
 
-	ClientGetCacheMutex.RLock()
+	//Refresh cache as client ip not present, or id not present
 
-	if valid_ids, ok := ClientGetValidCaches[c.ClientIP()]; !ok || valid_ids.IndexOf(id) == -1 {
-		//Refresh cache as client ip not present, or id not present
-
-		ClientGetCacheMutex.RUnlock()
-
-		pieces, err := GetBoard(id, GlobalDb, false)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		} else {
-			c.JSON(http.StatusOK, pieces)
-		}
-
-		ClientGetCacheMutex.Lock()
-		valid_ids.Add(id)
-		ClientGetValidCaches[c.ClientIP()] = valid_ids
-		ClientGetCacheMutex.Unlock()
-
-		return
+	pieces, err := GetBoard(id, GlobalDb, false)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	} else {
-		ClientGetCacheMutex.RUnlock()
+		c.JSON(http.StatusOK, pieces)
 	}
-
-	//The client already has a valid cache
-	c.JSON(http.StatusAlreadyReported, "")
 }
 
 func APINewGame(c *gin.Context) {
